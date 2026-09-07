@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 
 /**
  * Refreshes the Supabase session cookie on every request and keeps
- * signed-out visitors out of the desk and admin areas
+ * signed-out visitors out of the desk and admin areas.
  */
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });

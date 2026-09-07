@@ -36,7 +36,7 @@ export default function BookingForm({
     <form action={formAction}>
       <input type="hidden" name="food" value={JSON.stringify(food)} />
       <input type="hidden" name="source" value={atDesk ? "walk-in" : "online"} />
-      <div className="grid" style={{ gridTemplateColumns: "minmax(0,1.4fr) minmax(290px,1fr)", alignItems: "start" }}>
+      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1.4fr)_minmax(290px,1fr)] items-start gap-8">
         <div>
           <fieldset>
             <legend>Room and dates</legend>

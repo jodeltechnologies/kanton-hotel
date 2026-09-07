@@ -1,34 +1,43 @@
 :root{
-  --bg:#EAEEEC; --surface:#FFFFFF; --surface-2:#F4F7F5; --sunken:#E2E8E5;
-  --text:#14211E; --muted:#5E6E69; --line:#D3DBD7; --line-strong:#B6C2BD;
-  --teal:#0E6B5C; --teal-soft:#1FB89D; --teal-wash:#E4F4F0;
-  --caramel:#B4622F; --caramel-soft:#F4E7DD; --wood:#7B4426;
-  --ok:#1C7A4B; --ok-wash:#E3F3EA; --warn:#9A6B10; --warn-wash:#FBF0D8;
-  --bad:#A82C25; --bad-wash:#F8E5E3;
-  --ink:#0D1815; --on-ink:#E9EFEC; --on-ink-dim:#93A69F;
-  --shadow:0 1px 0 rgba(20,33,30,.06);
+  /* ---- Kanton brand, taken from the sign over the door ---- */
+  --brand-red:#A80F22;        /* the wordmark */
+  --brand-red-dark:#8A0B1B;
+  --brand-orange:#F26A0C;     /* the flag over the "o" */
+  --brand-navy:#0D1826;       /* the outline and the tagline */
+  --brand-blue:#17548F;       /* drawn out of the pale sign plate */
+  --brand-paper:#E9F1FA;      /* the plate itself */
+
+  --bg:#E9F1FA; --surface:#FFFFFF; --surface-2:#F4F8FC; --sunken:#DEE8F3;
+  --text:#14202E; --muted:#5B6A7D; --line:#D2DDEA; --line-strong:#B2C1D3;
+  --teal:var(--brand-blue); --teal-soft:var(--brand-orange); --teal-wash:#E3EDF8;
+  --caramel:var(--brand-red); --caramel-soft:#FAE6E8; --wood:var(--brand-orange);
+  --ok:#12703F; --ok-wash:#E0F1E7; --warn:#95610C; --warn-wash:#FBEFD6;
+  --bad:#A80F22; --bad-wash:#FAE6E8;
+  --ink:var(--brand-navy); --on-ink:#EAF1F9; --on-ink-dim:#93A5B8;
+  --shadow:0 1px 0 rgba(13,24,38,.07);
   --r:6px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0C1412; --surface:#141F1C; --surface-2:#192724; --sunken:#101A18;
-    --text:#E7EEEB; --muted:#93A69F; --line:#26352F; --line-strong:#3A4C45;
-    --teal:#3FCDB1; --teal-soft:#1FB89D; --teal-wash:#12302A;
-    --caramel:#E08B4F; --caramel-soft:#31221A; --wood:#C08A62;
-    --ok:#5CCB8E; --ok-wash:#12291D; --warn:#E0B44E; --warn-wash:#2B2415;
-    --bad:#F08076; --bad-wash:#2E1917;
-    --ink:#08110F; --on-ink:#E9EFEC; --on-ink-dim:#8DA099;
+        --bg:#0A121C; --surface:#121D2A; --surface-2:#182534; --sunken:#0E1823;
+    --text:#E6EDF6; --muted:#93A5B8; --line:#243347; --line-strong:#375069;
+    --teal:#6BA8E8; --teal-soft:#FF8B3D; --teal-wash:#132639;
+    --caramel:#E8515F; --caramel-soft:#2E1519; --wood:#FF8B3D;
+    --ok:#5AC98D; --ok-wash:#10281C; --warn:#E0B44E; --warn-wash:#2B2415;
+    --bad:#F0837B; --bad-wash:#2E1619;
+    --ink:#070E17; --on-ink:#E6EDF6; --on-ink-dim:#8B9EB3;
     --shadow:0 1px 0 rgba(0,0,0,.4);
-  }
+}
 }
 :root[data-theme="dark"]{
-  --bg:#0C1412; --surface:#141F1C; --surface-2:#192724; --sunken:#101A18;
-  --text:#E7EEEB; --muted:#93A69F; --line:#26352F; --line-strong:#3A4C45;
-  --teal:#3FCDB1; --teal-soft:#1FB89D; --teal-wash:#12302A;
-  --caramel:#E08B4F; --caramel-soft:#31221A; --wood:#C08A62;
-  --ok:#5CCB8E; --ok-wash:#12291D; --warn:#E0B44E; --warn-wash:#2B2415;
-  --bad:#F08076; --bad-wash:#2E1917;
-  --ink:#08110F; --on-ink:#E9EFEC; --on-ink-dim:#8DA099;
+  --bg:#0A121C; --surface:#121D2A; --surface-2:#182534; --sunken:#0E1823;
+  --text:#E6EDF6; --muted:#93A5B8; --line:#243347; --line-strong:#375069;
+  --teal:#6BA8E8; --teal-soft:#FF8B3D; --teal-wash:#132639;
+  --caramel:#E8515F; --caramel-soft:#2E1519; --wood:#FF8B3D;
+  --ok:#5AC98D; --ok-wash:#10281C; --warn:#E0B44E; --warn-wash:#2B2415;
+  --bad:#F0837B; --bad-wash:#2E1619;
+  --ink:#070E17; --on-ink:#E6EDF6; --on-ink-dim:#8B9EB3;
+  --shadow:0 1px 0 rgba(0,0,0,.4);
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -263,3 +272,13 @@ a.plain{text-decoration:none;color:inherit}
 .kiosk-night{min-width:64px;padding:14px 0;font-size:1.2rem;font-family:"Zilla Slab",serif;cursor:pointer;
   background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r);color:var(--text)}
 .kiosk-night.on{background:var(--teal);border-color:var(--teal);color:#fff}
+
+
+/* ---------- the sign over the door ---------- */
+.brand{gap:0}
+.brand .logo{height:38px;width:auto;display:block}
+.topbar .wrap{min-height:66px}
+.foot .logo{height:34px;width:auto;margin-bottom:10px}
+.kiosk-brand .logo{height:42px;width:auto}
+.receipt .logo{height:44px;width:auto;margin-bottom:8px}
+@media (max-width:520px){ .brand .logo{height:30px} }

@@ -15,7 +15,10 @@ export default async function KioskPage() {
   if (!unlocked) {
     return (
       <main className="kiosk">
-        <div className="kiosk-brand"><span className="mark">K</span> {settings.hotel_name}</div>
+        <div className="kiosk-brand">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="logo" src="/logo.png" alt={settings.hotel_name} />
+        </div>
         <KioskGate />
       </main>
     );
@@ -28,7 +31,8 @@ export default async function KioskPage() {
   return (
     <main className="kiosk">
       <div className="kiosk-brand">
-        <span className="mark">K</span> {settings.hotel_name}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="logo" src="/logo.png" alt={settings.hotel_name} />
         <Link href="/desk" className="tiny muted" style={{ marginLeft: "auto" }}>Staff</Link>
       </div>
       <KioskPicker rooms={rooms} settings={settings} />

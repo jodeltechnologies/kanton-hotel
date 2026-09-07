@@ -47,7 +47,9 @@ export default async function ReceiptPage({
       <div className="receipt" style={{ marginTop: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, borderBottom: "2px solid #000", paddingBottom: 10 }}>
           <div>
-            <h1 style={{ margin: 0 }}>{s.hotel_name}</h1>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="logo" src="/logo.png" alt={s.hotel_name} />
+            <h1 style={{ margin: 0, fontSize: "1.3rem" }}>{s.hotel_name}</h1>
             <div style={{ fontSize: ".85rem" }}>{s.address} · {s.po_box}<br />{s.phone}{s.email ? " · " + s.email : ""}</div>
           </div>
           <div style={{ textAlign: "right" }}>

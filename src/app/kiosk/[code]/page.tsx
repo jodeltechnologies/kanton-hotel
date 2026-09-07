@@ -16,7 +16,10 @@ export default async function KioskDone({ params }: { params: Promise<{ code: st
 
   return (
     <main className="kiosk">
-      <div className="kiosk-brand"><span className="mark">K</span> {s.hotel_name}</div>
+      <div className="kiosk-brand">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="logo" src="/logo.png" alt={s.hotel_name} />
+      </div>
       <div className="kiosk-center">
         <div className="panel pad" style={{ maxWidth: 620, width: "100%", textAlign: "center" }}>
           <p className="small muted" style={{ marginBottom: 4 }}>Room {r.room_label} is reserved for you</p>

@@ -25,13 +25,14 @@ export async function sendMail(opts: { to: string; subject: string; html: string
 }
 
 const wrap = (s: Settings, body: string) => `
-<div style="font-family:Helvetica,Arial,sans-serif;color:#14211e;max-width:600px;margin:0 auto">
-  <div style="background:#0D1815;color:#fff;padding:20px 24px">
-    <div style="font-size:20px;font-weight:700;letter-spacing:.02em">${s.hotel_name}</div>
-    <div style="color:#93A69F;font-size:12px;letter-spacing:.16em">KUMBA · KRAMMER AVENUE</div>
+<div style="font-family:Helvetica,Arial,sans-serif;color:#14202E;max-width:600px;margin:0 auto;border-top:4px solid #A80F22">
+  <div style="background:#0D1826;padding:18px 24px">
+    <img src="${siteUrl()}/logo-on-dark.png" alt="${s.hotel_name}" width="230"
+         style="display:block;width:230px;max-width:70%;height:auto">
+    <div style="color:#93A5B8;font-size:12px;letter-spacing:.16em;margin-top:8px">KUMBA · KRAMMER AVENUE</div>
   </div>
   <div style="padding:24px;background:#fff">${body}</div>
-  <div style="padding:16px 24px;background:#EAEEEC;font-size:12px;color:#5E6E69">
+  <div style="padding:16px 24px;background:#E9F1FA;font-size:12px;color:#5B6A7D">
     ${s.address} · ${s.po_box} · ${s.phone}<br>
     Free unlimited internet and a smart TV in every room. Checkout ${s.checkout_time}.
   </div>
@@ -58,13 +59,13 @@ export function bookingEmail(r: Reservation, s: Settings, siteUrl: string) {
       <p style="font-size:15px;margin:0">Room ${r.room_label} · ${r.room_name}<br>
         ${prettyDate(r.check_in)} → ${prettyDate(r.check_out)} · ${r.guests} guest${r.guests > 1 ? "s" : ""}</p>
       ${lines(r)}
-      <div style="background:#E4F4F0;border-left:3px solid #0E6B5C;padding:14px 16px;margin:16px 0">
+      <div style="background:#FAE6E8;border-left:3px solid #A80F22;padding:14px 16px;margin:16px 0">
         <b>Pay ${fcfa(r.advance_due)} to hold the room (${r.advance_percent}% advance).</b><br>
         Dial <b style="font-size:16px">${dial}</b> on your phone and confirm with your Mobile Money PIN.<br>
         Money goes to ${s.momo_name} · ${s.momo_number}.
       </div>
       <p style="font-size:14px">Then send the screenshot on WhatsApp to ${s.phone}, or add your transaction ID here:<br>
-        <a href="${siteUrl}/pay/${r.code}" style="color:#0E6B5C">${siteUrl}/pay/${r.code}</a></p>
+        <a href="${siteUrl}/pay/${r.code}" style="color:#A80F22">${siteUrl}/pay/${r.code}</a></p>
       <p style="font-size:13px;color:#5E6E69">${s.policy_text}</p>`),
   };
 }
@@ -84,7 +85,7 @@ export function paymentEmail(r: Reservation, s: Settings, amount: number, receip
       <p style="font-size:15px">Room ${r.room_label} is now locked to your name for
         ${prettyDate(r.check_in)} → ${prettyDate(r.check_out)}.</p>
       <p style="font-size:14px"><a href="${siteUrl}/receipt/${r.code}?p=${r.guest_phone.replace(/[^0-9]/g, "")}"
-        style="color:#0E6B5C">Open your receipt</a></p>`),
+        style="color:#A80F22">Open your receipt</a></p>`),
   };
 }
 

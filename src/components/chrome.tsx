@@ -8,12 +8,9 @@ export async function SiteHeader() {
   return (
     <header className="topbar">
       <div className="wrap">
-        <Link className="brand" href="/">
-          <div className="mark">K</div>
-          <div>
-            <b>{s.hotel_name}</b>
-            <span>KUMBA · KRAMMER AVENUE</span>
-          </div>
+        <Link className="brand" href="/" aria-label={s.hotel_name}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="logo" src="/logo-on-dark.png" alt={`${s.hotel_name} — home out of home`} />
         </Link>
         <nav className="navlinks">
           <Link href="/rooms">Rooms</Link>
@@ -33,6 +30,8 @@ export async function SiteFooter() {
     <footer className="foot">
       <div className="wrap spread">
         <div style={{ maxWidth: "34ch" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="logo" src="/logo-on-dark.png" alt={s.hotel_name} />
           <b>{s.hotel_name}</b>
           <p className="small" style={{ marginTop: 6 }}>
             {s.address} · {s.po_box}

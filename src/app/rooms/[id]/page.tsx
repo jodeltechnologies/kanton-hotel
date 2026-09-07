@@ -18,7 +18,7 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
       <SiteHeader />
       <main className="wrap section">
         <p className="small"><Link href="/rooms">Rooms</Link> <span className="muted">/ room {room.number}</span></p>
-        <div className="grid" style={{ gridTemplateColumns: "minmax(0,1.35fr) minmax(280px,1fr)", alignItems: "start" }}>
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1.35fr)_minmax(280px,1fr)] items-start gap-8">
           <div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={mediaUrl(room.photos[0] ?? "bed")} alt={room.name}

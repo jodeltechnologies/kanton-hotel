@@ -9,6 +9,18 @@ import type { Payment } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+// Inside src/app/receipt/[code]/page.tsx:
+<div className="print-root min-h-screen bg-neutral-700 py-8 px-4">
+  {/* Top bar hidden during print */}
+  <div className="no-print max-w-3xl mx-auto mb-6 flex items-center justify-between gap-3">
+    {/* Back button & PrintButton here */}
+  </div>
+
+  {/* Printable white sheet */}
+  <div className="print-sheet max-w-3xl mx-auto bg-white text-slate-900 p-8 rounded shadow-lg">
+    {/* Receipt / Invoice content here */}
+  </div>
+</div>
 /** Printable receipt (one payment) or invoice (the whole bill). */
 export default async function ReceiptPage({
   params, searchParams,

@@ -8,6 +8,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { cancelBooking, checkIn, checkOut, markNoShow, moveRoom, takePayment } from "@/app/actions/desk";
 import { fcfa, ID_TYPES, money, prettyDate, shortDate, SOURCE_LABEL, stamp, titleCase } from "@/lib/util";
 import type { Payment } from "@/lib/types";
+import { preferredPaymentMode } from "@/lib/payment";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +16,10 @@ export default async function BookingDetail({
   params, searchParams,
 }: {
   params: Promise<{ code: string }>;
-  searchParams: Promise<{ needid?: string }>;
+  searchParams: Promise<{ needid?: string; paymentError?: string }>;
 }) {
   const { code } = await params;
-  const { needid } = await searchParams;
+  const { needid, paymentError } = await searchParams;
   const staff = await requireStaff("reservations");
   const r = await getReservationByCode(code);
   if (!r) notFound();
@@ -47,6 +48,9 @@ export default async function BookingDetail({
           room or call the guest.
         </div>
       )}
+      {paymentError && <div className="notice bad" style={{ marginTop: 14 }}>
+        Payment was not recorded. Check the outstanding balance and room availability, then try again.
+      </div>}
 
       <div className="grid g2" style={{ marginTop: 16 }}>
         <div className="summary">
@@ -94,7 +98,8 @@ export default async function BookingDetail({
             <input type="hidden" name="code" value={r.code} />
             <div className="grid g2" style={{ gap: "0 14px" }}>
               <label className="field"><span>Amount received (FCFA)</span>
-                <input type="number" name="amount" min={1} defaultValue={due || balance} required /></label>
+                <input type="number" name="amount" min={1} max={balance}
+                  defaultValue={preferredPaymentMode(r) === "full" ? balance : due || balance} required /></label>
               <label className="field"><span>How they paid</span>
                 <select name="method" defaultValue="Mobile Money">
                   <option>Mobile Money</option><option>Cash</option><option>Bank transfer</option><option>Card</option>

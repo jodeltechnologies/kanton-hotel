@@ -1,4 +1,5 @@
 import type { Reservation, Settings } from "./types";
+import { preferredPaymentMode } from "./payment";
 import { dialString, fcfa, prettyDate } from "./util";
 
 /**
@@ -49,7 +50,9 @@ const lines = (r: Reservation) => `
 
 /** Sent the moment a booking is made online. */
 export function bookingEmail(r: Reservation, s: Settings, siteUrl: string) {
-  const dial = dialString(s, r.advance_due);
+  const full = preferredPaymentMode(r) === "full";
+  const amount = full ? r.total : r.advance_due;
+  const dial = dialString(s, amount);
   return {
     subject: `Booking ${r.code} — ${s.hotel_name}`,
     html: wrap(s, `
@@ -60,7 +63,7 @@ export function bookingEmail(r: Reservation, s: Settings, siteUrl: string) {
         ${prettyDate(r.check_in)} → ${prettyDate(r.check_out)} · ${r.guests} guest${r.guests > 1 ? "s" : ""}</p>
       ${lines(r)}
       <div style="background:#FAE6E8;border-left:3px solid #A80F22;padding:14px 16px;margin:16px 0">
-        <b>Pay ${fcfa(r.advance_due)} to hold the room (${r.advance_percent}% advance).</b><br>
+        <b>Pay ${fcfa(amount)} ${full ? "for full payment" : `to hold the room (${r.advance_percent}% advance)`}.</b><br>
         Dial <b style="font-size:16px">${dial}</b> on your phone and confirm with your Mobile Money PIN.<br>
         Money goes to ${s.momo_name} · ${s.momo_number}.
       </div>

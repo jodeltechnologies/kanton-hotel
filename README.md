@@ -1,7 +1,7 @@
 # Kanton Hotel V.I.P — reservation and front-desk system
 
 Krammer Avenue, Kumba. Guests reserve a room and their meals before they travel, pay an
-advance by Mobile Money, and reception runs the house from the same database: bookings,
+advance or the full bill by Mobile Money, and reception runs the house from the same database: bookings,
 payments, receipts, check-in with the ID card, the room board and the day's takings.
 
 **Stack:** Next.js 15 (App Router, server actions) · Supabase (Postgres, Auth, Storage) ·
@@ -16,7 +16,7 @@ catalogue, everything else goes through the server.
 - Room grid with real photographs, a walk-through video when the manager uploads one,
   prices, what each room offers, and live availability.
 - Reserve dates, add meals from the kitchen menu, agree to the house rules.
-- Pay the advance: one tap opens the phone dialler already loaded with
+- Choose a reservation with the advance or full payment. One tap opens the phone dialler already loaded with
   `*126*9*<number>*<amount>#`. The number, the percentage and the pattern are all set by
   the manager.
 - Confirmation by email the moment the booking is made, and again when reception records
@@ -33,9 +33,10 @@ catalogue, everything else goes through the server.
 - Room board for housekeeping, takings report with the full payment log.
 
 **Reception tablet (`/kiosk`)**
-A guest standing at the desk picks a free room on the tablet, gives their name, phone and
-ID number, and gets a booking code in about thirty seconds — then pays at the desk or from
-their own phone.
+The homepage has a booking kiosk link. A guest chooses dates and an available room, gives
+their details, and chooses either the reservation advance or full payment. The Mobile Money
+code uses the selected amount. Reception confirms the actual transfer before the app records
+it as received. The dedicated reception tablet remains available at `/kiosk?tablet=1` with its PIN.
 
 **General manager (the owner account)**
 Advance percentage, hold hours, no-show grace, cancellation window, strike limit, policy
@@ -131,7 +132,8 @@ wrapped so a mail failure can never break a booking.
 
 ## 6. The tablet at reception
 
-1. On the tablet, open `https://your-domain/kiosk`.
+1. On the dedicated reception tablet, open `https://your-domain/kiosk?tablet=1`.
+   Guests can open the public `/kiosk` directly from the homepage.
 2. Type the tablet PIN (default `2468`, change it in **Hotel settings → Reception
    tablet**). The device stays unlocked for 30 days.
 3. Add the page to the home screen so it opens full screen, and leave the tablet on that
@@ -156,7 +158,7 @@ src/app/actions/             every write in the system, as server actions
 src/app/(guest pages)        /, /rooms, /book, /pay, /find, /dining, /policy, /receipt
 src/app/desk/                today, bookings, walk-in, room board, takings
 src/app/admin/               settings, staff, rooms, menu, no-show list, profile
-src/app/kiosk/               the reception tablet
+src/app/kiosk/               public booking kiosk and PIN-protected reception tablet
 public/photos/               the hotel photographs
 ```
 
@@ -171,3 +173,17 @@ public/photos/               the hotel photographs
 - Set a real `NEXT_PUBLIC_SITE_URL` before switching email on, or the links in guest mail
   will point at the wrong host.
 - Back-ups: Supabase → Database → Backups. Turn on daily backups before go-live.
+
+## Thermal receipts
+
+Open a payment receipt, invoice, or reservation slip and select **80 mm** or **58 mm**
+receipt paper. The choice is remembered on that browser. The page shows the narrow receipt
+before printing and measures its length for the print preview. Unpaid bookings print a
+**RESERVATION SLIP**, clearly marked as awaiting payment. Only recorded payments produce
+a numbered **PAYMENT RECEIPT**.
+
+In the print dialog, choose your thermal printer and matching roll width. Use 100% scale,
+no margins, and turn off browser headers and footers. Printer drivers may require you to
+select the corresponding receipt roll or custom paper size in their own settings.
+
+See `UPDATE_NOTES.md` for the changes and repository upload instructions.

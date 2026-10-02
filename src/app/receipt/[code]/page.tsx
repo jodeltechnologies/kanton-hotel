@@ -1,30 +1,15 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import PrintButton from "@/components/PrintButton";
+import ThermalReceipt from "@/components/ThermalReceipt";
 import { currentStaff } from "@/lib/auth";
 import { getReservationByCode, getSettings } from "@/lib/db";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { fcfa, money, normPhone, prettyDate } from "@/lib/util";
+import { fcfa, money, normPhone, prettyDate, SOURCE_LABEL } from "@/lib/util";
 import type { Payment } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-// Inside src/app/receipt/[code]/page.tsx:
-<div className="print-root min-h-screen bg-neutral-700 py-8 px-4">
-  {/* Top bar hidden during print */}
-  <div className="no-print max-w-3xl mx-auto mb-6 flex items-center justify-between gap-3">
-    {/* Back button & PrintButton here */}
-  </div>
-
-  {/* Printable white sheet */}
-  <div className="print-sheet max-w-3xl mx-auto bg-white text-slate-900 p-8 rounded shadow-lg">
-    {/* Receipt / Invoice content here */}
-  </div>
-</div>
-/** Printable receipt (one payment) or invoice (the whole bill). */
-export default async function ReceiptPage({
-  params, searchParams,
-}: {
+/** A numbered payment receipt, full invoice, or clearly labelled unpaid booking slip. */
+export default async function ReceiptPage({ params, searchParams }: {
   params: Promise<{ code: string }>;
   searchParams: Promise<{ r?: string; p?: string; invoice?: string }>;
 }) {
@@ -32,103 +17,87 @@ export default async function ReceiptPage({
   const { r: receiptNo, p, invoice } = await searchParams;
   const res = await getReservationByCode(code);
   if (!res) notFound();
-
-  // Staff may see any file; a guest needs their own phone number in the link.
   const staff = await currentStaff();
   if (!staff && normPhone(p ?? "") !== normPhone(res.guest_phone)) notFound();
 
-  const s = await getSettings();
-  const { data } = await supabaseAdmin().from("payments").select("*")
-    .eq("reservation_id", res.id).order("created_at");
+  const [s, { data, error }] = await Promise.all([
+    getSettings(),
+    supabaseAdmin().from("payments").select("*").eq("reservation_id", res.id).order("created_at"),
+  ]);
+  if (error) throw new Error("The payment records could not be loaded. Please try again.");
   const payments = (data ?? []) as Payment[];
-  const payment = invoice ? null : (receiptNo ? payments.find((x) => x.receipt_no === receiptNo) : payments.at(-1)) ?? null;
+  const payment = invoice ? null : (receiptNo ? payments.find((item) => item.receipt_no === receiptNo) : payments.at(-1)) ?? null;
+  if (receiptNo && !payment && !invoice) notFound();
   const balance = Math.max(0, res.total - res.paid);
+  const title = invoice ? "INVOICE" : payment ? "PAYMENT RECEIPT" : "RESERVATION SLIP";
+  const invoiceQuery = new URLSearchParams({ invoice: "1", ...(p ? { p } : {}) });
 
   return (
-    <main>
-      <div className="wrap noprint" style={{ padding: "18px 20px 0" }}>
-        <div className="spread">
-          <Link className="btn ghost sm" href={staff ? `/desk/booking/${res.code}` : "/find"}>Back</Link>
-          <div className="row">
-            <PrintButton label={invoice ? "Print the invoice" : "Print the receipt"} />
-            {!invoice && <Link className="btn ghost" href={`/receipt/${res.code}?invoice=1${p ? `&p=${p}` : ""}`}>See the full invoice</Link>}
-          </div>
-        </div>
-      </div>
+    <ThermalReceipt backHref={staff ? `/desk/booking/${res.code}` : "/find"}
+      invoiceHref={!invoice ? `/receipt/${res.code}?${invoiceQuery}` : undefined}
+      label={invoice ? "Print invoice" : payment ? "Print receipt" : "Print reservation slip"}>
+      <header className="receipt-header">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="receipt-logo" src="/logo.png" alt={s.hotel_name} width={150} />
+        <h1>{s.hotel_name}</h1>
+        <div>{s.address}{s.po_box && <><br />{s.po_box}</>}</div>
+        <div>{s.phone}{s.email && <><br />{s.email}</>}</div>
+        <h2>{title}</h2>
+        <div>{payment ? `No. ${payment.receipt_no}` : `Booking ${res.code}`}</div>
+        <div>{new Date(payment?.created_at ?? res.created_at).toLocaleString("en-GB", { timeZone: "Africa/Douala" })}</div>
+      </header>
 
-      <div className="receipt" style={{ marginTop: 18 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 20, borderBottom: "2px solid #000", paddingBottom: 10 }}>
-          <div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="logo" src="/logo.png" alt={s.hotel_name} />
-            <h1 style={{ margin: 0, fontSize: "1.3rem" }}>{s.hotel_name}</h1>
-            <div style={{ fontSize: ".85rem" }}>{s.address} · {s.po_box}<br />{s.phone}{s.email ? " · " + s.email : ""}</div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>{invoice ? "INVOICE" : "RECEIPT"}</div>
-            <div style={{ fontSize: ".85rem" }}>
-              {payment ? `No. ${payment.receipt_no}` : `Booking ${res.code}`}<br />
-              {new Date(payment?.created_at ?? Date.now()).toLocaleString("en-GB")}
-            </div>
-          </div>
-        </div>
+      <section className="receipt-details">
+        <div><b>Guest:</b> {res.guest_name}</div>
+        <div><b>Phone:</b> {res.guest_phone}</div>
+        {res.guest_email && <div><b>Email:</b> {res.guest_email}</div>}
+        <div><b>Booking:</b> {res.code}</div>
+        <div><b>Room:</b> {res.room_label} ({res.room_name})</div>
+        <div><b>Arrival:</b> {prettyDate(res.check_in)}</div>
+        <div><b>Departure:</b> {prettyDate(res.check_out)}</div>
+        <div><b>Stay:</b> {res.nights} night{res.nights > 1 ? "s" : ""}. Checkout {s.checkout_time}</div>
+        <div><b>Booked:</b> {SOURCE_LABEL[res.source]}</div>
+      </section>
 
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 20, margin: "14px 0", fontSize: ".9rem" }}>
-          <div><b>Guest</b><br />{res.guest_name}<br />{res.guest_phone}{res.guest_email && <><br />{res.guest_email}</>}</div>
-          <div><b>Stay</b><br />Room {res.room_label}<br />
-            {prettyDate(res.check_in)} → {prettyDate(res.check_out)} ({res.nights} night{res.nights > 1 ? "s" : ""})<br />
-            Checkout {s.checkout_time}</div>
-          <div><b>Booking</b><br />{res.code}<br />{res.source === "walk-in" ? "Taken at the desk" : "Reserved online"}</div>
-        </div>
+      <table className="receipt-items">
+        <colgroup><col /><col style={{ width: "32%" }} /></colgroup>
+        <thead><tr><th>Item</th><th className="right">FCFA</th></tr></thead>
+        <tbody>
+          <tr><td>Room {res.room_label}<small>{res.nights} × {money(res.room_price)}</small></td>
+            <td className="right">{money(res.room_total)}</td></tr>
+          {res.food.map((f) => <tr key={f.id}><td>{f.name}<small>{f.qty} × {money(f.price)}</small></td>
+            <td className="right">{money(f.price * f.qty)}</td></tr>)}
+        </tbody>
+      </table>
 
-        <table>
-          <thead>
-            <tr><th>Item</th><th style={{ textAlign: "right" }}>Qty</th>
-              <th style={{ textAlign: "right" }}>Unit</th><th style={{ textAlign: "right" }}>Amount</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Room {res.room_label} — {res.room_name}</td>
-              <td style={{ textAlign: "right" }}>{res.nights}</td>
-              <td style={{ textAlign: "right" }}>{money(res.room_price)}</td>
-              <td style={{ textAlign: "right" }}>{money(res.room_total)}</td>
-            </tr>
-            {res.food.map((f) => (
-              <tr key={f.id}>
-                <td>{f.name}</td>
-                <td style={{ textAlign: "right" }}>{f.qty}</td>
-                <td style={{ textAlign: "right" }}>{money(f.price)}</td>
-                <td style={{ textAlign: "right" }}>{money(f.price * f.qty)}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr><td colSpan={3} style={{ textAlign: "right" }}><b>Total</b></td>
-              <td style={{ textAlign: "right" }}><b>{fcfa(res.total)}</b></td></tr>
-            {payment && (
-              <tr><td colSpan={3} style={{ textAlign: "right" }}>
-                Received now ({payment.method}{payment.reference ? " · " + payment.reference : ""})</td>
-                <td style={{ textAlign: "right" }}><b>{fcfa(payment.amount)}</b></td></tr>
-            )}
-            {invoice && payments.map((p2) => (
-              <tr key={p2.id}><td colSpan={3} style={{ textAlign: "right" }}>
-                {new Date(p2.created_at).toLocaleDateString("en-GB")} · {p2.method} · {p2.receipt_no}</td>
-                <td style={{ textAlign: "right" }}>{fcfa(p2.amount)}</td></tr>
-            ))}
-            <tr><td colSpan={3} style={{ textAlign: "right" }}>Total received</td>
-              <td style={{ textAlign: "right" }}>{fcfa(res.paid)}</td></tr>
-            <tr><td colSpan={3} style={{ textAlign: "right" }}><b>Balance</b></td>
-              <td style={{ textAlign: "right" }}><b>{fcfa(balance)}</b></td></tr>
-          </tfoot>
-        </table>
+      <section className="receipt-totals">
+        <div className="receipt-line strong"><span>Total stay</span><b>{fcfa(res.total)}</b></div>
+        {payment && <>
+          <div className="receipt-line strong"><span>Received now</span><b>{fcfa(payment.amount)}</b></div>
+          <div>Method: {payment.method}</div>
+          {payment.reference && <div>Reference: {payment.reference}</div>}
+        </>}
+        {invoice && payments.length > 0 && <div className="receipt-payment-log">
+          <b>Payments received</b>
+          {payments.map((item) => <div key={item.id} className="receipt-payment-entry">
+            <div className="receipt-line"><span>{new Date(item.created_at).toLocaleDateString("en-GB", { timeZone: "Africa/Douala" })}</span><b>{fcfa(item.amount)}</b></div>
+            <div>{item.method} · {item.receipt_no}</div>
+            {item.reference && <div>Reference: {item.reference}</div>}
+          </div>)}
+        </div>}
+        <div className="receipt-line"><span>Total received</span><span>{fcfa(res.paid)}</span></div>
+        <div className="receipt-line strong"><span>Balance due</span><b>{fcfa(balance)}</b></div>
+      </section>
 
-        <div style={{ marginTop: 20, fontSize: ".82rem", borderTop: "1px solid #999", paddingTop: 10 }}>
-          {payment && <>Served by {payment.taken_by_name}. </>}
-          {balance > 0 ? "Balance payable at the desk on arrival." : "Paid in full. Thank you."}<br />
-          Free unlimited internet and a smart TV in every room. {s.policy_text}<br />
-          <b>{s.owner_name}</b> · {s.owner_phone}
-        </div>
-      </div>
-    </main>
+      <footer className="receipt-footer">
+        {!payment && !invoice && res.paid === 0 && <p><b>Awaiting payment. This slip is not proof of payment.</b>
+          <br />Advance to secure the room: {fcfa(res.advance_due)}. You may also pay in full.</p>}
+        {payment && <p>Served by {payment.taken_by_name}.</p>}
+        <p>{balance > 0 ? "Balance payable before or on arrival." : "Paid in full. Thank you."}</p>
+        <p>{s.policy_text}</p>
+        {(s.owner_name || s.owner_phone) && <p>{s.owner_name}{s.owner_phone && <><br />{s.owner_phone}</>}</p>}
+        <p>Thank you for choosing {s.hotel_name}.</p>
+      </footer>
+    </ThermalReceipt>
   );
 }

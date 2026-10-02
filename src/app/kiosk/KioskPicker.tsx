@@ -1,8 +1,10 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import PaymentChoice from "@/components/PaymentChoice";
+import type { PaymentMode } from "@/lib/payment";
 import { createBooking, type FormState } from "@/app/actions/booking";
-import { addDays, fcfa, ID_TYPES, mediaUrl, money, todayISO } from "@/lib/util";
+import { fcfa, ID_TYPES, mediaUrl, money, nightsBetween, prettyDate } from "@/lib/util";
 import type { Room, Settings } from "@/lib/types";
 
 /**
@@ -10,12 +12,13 @@ import type { Room, Settings } from "@/lib/types";
  * picks a free room, gives their name and phone, and gets a booking code
  * in about thirty seconds.
  */
-export default function KioskPicker({ rooms, settings }: { rooms: Room[]; settings: Settings }) {
+export default function KioskPicker({ rooms, settings, checkIn, checkOut }: {
+  rooms: Room[]; settings: Pick<Settings, "checkout_time" | "advance_percent">; checkIn: string; checkOut: string;
+}) {
   const [state, action, pending] = useActionState<FormState, FormData>(createBooking, {});
   const [room, setRoom] = useState<Room | null>(null);
-  const [nights, setNights] = useState(1);
-
-  const today = todayISO();
+  const [mode, setMode] = useState<PaymentMode>("reserve");
+  const nights = nightsBetween(checkIn, checkOut);
   const total = room ? room.price * nights : 0;
   const advance = Math.round((total * settings.advance_percent) / 100);
 
@@ -24,11 +27,11 @@ export default function KioskPicker({ rooms, settings }: { rooms: Room[]; settin
       <>
         <div className="kiosk-head">
           <h1>Welcome. Pick your room.</h1>
-          <p className="lede">Free for tonight, {settings.checkout_time} checkout tomorrow. Prices are per night.</p>
+          <p className="lede">{prettyDate(checkIn)} to {prettyDate(checkOut)}. Checkout {settings.checkout_time}. Prices are per night.</p>
         </div>
         {rooms.length === 0 ? (
           <div className="notice bad kiosk-wide">
-            Every room is taken tonight. Please speak to the receptionist — they keep a waiting list.
+            No rooms are available for these dates. Choose other dates or speak to reception.
           </div>
         ) : (
           <div className="grid g3 kiosk-wide">
@@ -56,8 +59,8 @@ export default function KioskPicker({ rooms, settings }: { rooms: Room[]; settin
     <form action={action} className="kiosk-wide">
       <input type="hidden" name="source" value="kiosk" />
       <input type="hidden" name="roomId" value={room.id} />
-      <input type="hidden" name="checkIn" value={today} />
-      <input type="hidden" name="checkOut" value={addDays(today, nights)} />
+      <input type="hidden" name="checkIn" value={checkIn} />
+      <input type="hidden" name="checkOut" value={checkOut} />
       <input type="hidden" name="arrival" value="now" />
       <input type="hidden" name="food" value="{}" />
 
@@ -66,7 +69,7 @@ export default function KioskPicker({ rooms, settings }: { rooms: Room[]; settin
         <button type="button" className="btn ghost" onClick={() => setRoom(null)}>Choose another room</button>
       </div>
 
-      <div className="grid" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(300px,.8fr)", alignItems: "start", marginTop: 18 }}>
+      <div className="grid kiosk-booking" style={{ marginTop: 18 }}>
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={mediaUrl(room.photos[0] ?? "bed")} alt={room.name}
@@ -75,13 +78,7 @@ export default function KioskPicker({ rooms, settings }: { rooms: Room[]; settin
             {room.amenities.map((a) => <span className="chip teal" key={a}>{a}</span>)}
           </div>
 
-          <h3 style={{ marginTop: 20 }}>How many nights?</h3>
-          <div className="row" style={{ marginTop: 8 }}>
-            {[1, 2, 3, 4, 5, 7].map((n) => (
-              <button type="button" key={n} className={"kiosk-night" + (nights === n ? " on" : "")}
-                onClick={() => setNights(n)}>{n}</button>
-            ))}
-          </div>
+          <p className="small" style={{ marginTop: 16 }}>{prettyDate(checkIn)} to {prettyDate(checkOut)}. {nights} night{nights > 1 ? "s" : ""}.</p>
 
           <h3 style={{ marginTop: 22 }}>Your details</h3>
           <div className="grid g2" style={{ gap: "0 14px" }}>
@@ -108,10 +105,9 @@ export default function KioskPicker({ rooms, settings }: { rooms: Room[]; settin
             <span>{nights} night{nights > 1 ? "s" : ""} × {money(room.price)}</span><b>{fcfa(total)}</b>
           </div>
           <div className="sumline total"><span>Total</span><span>{fcfa(total)}</span></div>
-          <div className="sumline due">
-            <span>Advance to hold it ({settings.advance_percent}%)</span><span>{fcfa(advance)}</span>
-          </div>
-          <div className="sumline small"><span className="muted">Balance at the desk</span><span>{fcfa(total - advance)}</span></div>
+          <PaymentChoice mode={mode} onChange={setMode} advance={advance} total={total} advancePercent={settings.advance_percent} />
+          <div className="sumline due"><span>Pay now</span><span>{fcfa(mode === "full" ? total : advance)}</span></div>
+          <div className="sumline small"><span className="muted">Balance after payment</span><span>{fcfa(mode === "full" ? 0 : total - advance)}</span></div>
           <hr />
           <label className="checkline">
             <input type="checkbox" name="agree" required />
@@ -119,7 +115,7 @@ export default function KioskPicker({ rooms, settings }: { rooms: Room[]; settin
               {" "}{settings.checkout_time}.</span>
           </label>
           <button className="btn block" style={{ marginTop: 14, fontSize: "1.05rem", padding: "14px 18px" }} disabled={pending}>
-            {pending ? "One moment…" : "Reserve this room"}
+            {pending ? "One moment…" : mode === "full" ? "Continue to full payment" : "Reserve this room"}
           </button>
           {state.error && <div className="notice bad form-msg">{state.error}</div>}
           <p className="tiny muted" style={{ marginTop: 10 }}>

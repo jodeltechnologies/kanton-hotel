@@ -2,6 +2,8 @@
 
 import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
+import PaymentChoice from "@/components/PaymentChoice";
+import type { PaymentMode } from "@/lib/payment";
 import { createBooking, type FormState } from "@/app/actions/booking";
 import { addDays, fcfa, money, nightsBetween, todayISO } from "@/lib/util";
 import type { MenuItem, Room } from "@/lib/types";
@@ -15,6 +17,7 @@ export default function BookingForm({
   const [roomId, setRoomId] = useState(preselect ?? "");
   const [checkIn, setCheckIn] = useState(todayISO());
   const [checkOut, setCheckOut] = useState(addDays(todayISO(), 1));
+  const [mode, setMode] = useState<PaymentMode>("reserve");
   const [food, setFood] = useState<Record<string, number>>({});
 
   const room = rooms.find((r) => r.id === roomId);
@@ -36,7 +39,7 @@ export default function BookingForm({
     <form action={formAction}>
       <input type="hidden" name="food" value={JSON.stringify(food)} />
       <input type="hidden" name="source" value={atDesk ? "walk-in" : "online"} />
-      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1.4fr)_minmax(290px,1fr)] items-start gap-8">
+      <div className="grid booking-layout">
         <div>
           <fieldset>
             <legend>Room and dates</legend>
@@ -61,7 +64,7 @@ export default function BookingForm({
                 <input type="date" name="checkOut" min={addDays(checkIn, 1)} value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)} /></label>
               <label className="field"><span>Guests</span>
-                <input type="number" name="guests" min={1} max={4} defaultValue={1} /></label>
+                <input type="number" name="guests" min={1} max={room?.capacity ?? 4} defaultValue={1} /></label>
               <label className="field"><span>Expected arrival time</span>
                 <select name="arrival" defaultValue="afternoon">
                   <option value="morning">Morning (before 12:00)</option>
@@ -127,8 +130,9 @@ export default function BookingForm({
           ))}
           {foodTotal > 0 && <div className="sumline"><span className="muted">Meals</span><b>{fcfa(foodTotal)}</b></div>}
           <div className="sumline total"><span>Total stay</span><span>{fcfa(total)}</span></div>
-          <div className="sumline due"><span>Advance ({advancePercent}%)</span><span>{fcfa(advance)}</span></div>
-          <div className="sumline small"><span className="muted">Balance on arrival</span><span>{fcfa(total - advance)}</span></div>
+          <PaymentChoice mode={mode} onChange={setMode} advance={advance} total={total} advancePercent={advancePercent} />
+          <div className="sumline due"><span>Pay now</span><span>{fcfa(mode === "full" ? total : advance)}</span></div>
+          <div className="sumline small"><span className="muted">Balance after payment</span><span>{fcfa(mode === "full" ? 0 : total - advance)}</span></div>
           <hr />
           {!atDesk && (
             <label className="checkline">
@@ -139,7 +143,7 @@ export default function BookingForm({
             </label>
           )}
           <button className="btn block" style={{ marginTop: 14 }} disabled={pending || !room || !total}>
-            {pending ? "Saving…" : atDesk ? "Create the booking" : "Reserve and go to payment"}
+            {pending ? "Saving…" : atDesk ? "Create the booking" : mode === "full" ? "Continue to full payment" : "Reserve with an advance"}
           </button>
           {state.error && <div className="notice bad form-msg">{state.error}</div>}
           <p className="tiny muted" style={{ marginTop: 8 }}>

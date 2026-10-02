@@ -1,53 +1,44 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import CopyButton from "@/components/CopyButton";
-import { getReservationByCode, getSettings } from "@/lib/db";
-import { dialHref, dialString, fcfa, prettyDate } from "@/lib/util";
+import GuestPayment from "@/components/GuestPayment";
+import { getReservationByCode, getSettings, roomIsTaken } from "@/lib/db";
+import { paymentMode, preferredPaymentMode } from "@/lib/payment";
+import { prettyDate } from "@/lib/util";
 
 export const dynamic = "force-dynamic";
 
-/** The "take this to the desk" screen on the reception tablet. */
-export default async function KioskDone({ params }: { params: Promise<{ code: string }> }) {
+export default async function KioskDone({ params, searchParams }: {
+  params: Promise<{ code: string }>; searchParams: Promise<{ mode?: string }>;
+}) {
   const { code } = await params;
+  const { mode } = await searchParams;
   const r = await getReservationByCode(code);
   if (!r) notFound();
   const s = await getSettings();
-  const dial = dialString(s, r.advance_due);
-
-  return (
-    <main className="kiosk">
-      <div className="kiosk-brand">
+  const lost = r.status === "held" && r.room_id ? await roomIsTaken(r.room_id, r.check_in, r.check_out, r.code) : false;
+  const closed = ["cancelled", "no_show", "checked_out"].includes(r.status);
+  return <main className="kiosk">
+    <div className="kiosk-brand">
+      <Link href="/" aria-label="Hotel homepage">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="logo" src="/logo.png" alt={s.hotel_name} />
+      </Link>
+      <Link href="/">Home</Link>
+    </div>
+    <div className="wrap narrow">
+      <div className="panel pad">
+        <h1 style={{ fontSize: "1.8rem" }}>Your booking</h1>
+        <div className="code">{r.code}</div>
+        <p>{r.guest_name} · room {r.room_label}<br />{prettyDate(r.check_in)} to {prettyDate(r.check_out)} ({r.nights} night{r.nights > 1 ? "s" : ""})</p>
+        <p className="small muted">Keep this code. Reception uses it to find your booking and confirm your payment.</p>
       </div>
-      <div className="kiosk-center">
-        <div className="panel pad" style={{ maxWidth: 620, width: "100%", textAlign: "center" }}>
-          <p className="small muted" style={{ marginBottom: 4 }}>Room {r.room_label} is reserved for you</p>
-          <div className="code" style={{ fontSize: "2.6rem" }}>{r.code}</div>
-          <p style={{ marginTop: 10 }}>
-            {r.guest_name} · {prettyDate(r.check_in)} → {prettyDate(r.check_out)} ({r.nights} night{r.nights > 1 ? "s" : ""})
-          </p>
-
-          <div className="notice" style={{ textAlign: "left", marginTop: 16 }}>
-            <b>Give this code to the receptionist to pay {fcfa(r.advance_due)}</b> — cash or Mobile Money at the desk.
-            The room is not held until the advance is in.
-          </div>
-
-          <div className="dial" style={{ margin: "16px 0" }}>{dial}</div>
-          <div className="row" style={{ justifyContent: "center" }}>
-            <a className="btn" href={dialHref(s, r.advance_due)}>Pay from my own phone</a>
-            <CopyButton text={dial} label="Copy the code" />
-          </div>
-
-          <p className="tiny muted" style={{ marginTop: 16 }}>
-            {r.guest_email ? "A confirmation has been sent to your email. " : ""}
-            Checkout is {s.checkout_time}.
-          </p>
-
-          <hr />
-          <Link className="btn ghost block" href="/kiosk">Done — start a new booking</Link>
-        </div>
-      </div>
-    </main>
-  );
+      {lost && <div className="notice bad" style={{ marginTop: 18 }}>This room is now taken for your dates. Contact reception before paying.</div>}
+      <GuestPayment bill={{ code: r.code, total: r.total, paid: r.paid, advance_due: r.advance_due,
+        advance_percent: r.advance_percent, payment_status: r.payment_status, momo_ref: r.momo_ref,
+        guest_name: r.guest_name, guest_phone: r.guest_phone }}
+        settings={{ momo_name: s.momo_name, momo_number: s.momo_number, momo_pattern: s.momo_pattern, whatsapp: s.whatsapp }}
+        initialMode={mode ? paymentMode(mode) : preferredPaymentMode(r)} disabled={lost || closed} />
+      <p style={{ marginTop: 18 }}><Link className="btn ghost block" href="/kiosk">Start a new booking</Link></p>
+    </div>
+  </main>;
 }

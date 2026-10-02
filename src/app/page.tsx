@@ -26,11 +26,12 @@ export default async function Home() {
             <h1>Reserve your room before you travel to Kumba.</h1>
             <div className="rule" />
             <p className="lede">
-              {s.tagline} Pick your room, add your meals, pay the {s.advance_percent}% advance by
+              {s.tagline} Pick your room, add your meals, reserve with a {s.advance_percent}% advance or pay in full by
               Mobile Money and walk straight to your key.
             </p>
             <div className="row" style={{ marginTop: 22 }}>
               <Link className="btn" href="/rooms">Choose a room</Link>
+              <Link className="btn teal" href="/kiosk">Open booking kiosk</Link>
               <Link className="btn ghost" href="/find" style={{ color: "#fff", borderColor: "rgba(255,255,255,.45)" }}>
                 Find my booking
               </Link>
@@ -53,12 +54,12 @@ export default async function Home() {
             <ol className="stepnums grid g2" style={{ padding: 0, margin: 0 }}>
               <li><div><b>Pick your room and meals</b>
                 <p className="small muted">Every room shows its photos, its price and what is inside it.</p></div></li>
-              <li><div><b>Pay the {s.advance_percent}% advance</b>
-                <p className="small muted">One tap opens your dialler with the Mobile Money code already filled in.</p></div></li>
+              <li><div><b>Reserve or pay in full</b>
+                <p className="small muted">Choose the {s.advance_percent}% advance or the full amount. The Mobile Money code matches your choice.</p></div></li>
               <li><div><b>Send the screenshot</b>
                 <p className="small muted">Not compulsory, but it settles any argument at the desk.</p></div></li>
               <li><div><b>Collect your key</b>
-                <p className="small muted">Reception confirms the advance and the balance is paid on arrival.</p></div></li>
+                <p className="small muted">Reception confirms your payment. Any remaining balance is paid before or on arrival.</p></div></li>
             </ol>
             <div className="notice" style={{ marginTop: 22 }}>
               <b>An unpaid booking is not a held room.</b> {s.policy_text}{" "}

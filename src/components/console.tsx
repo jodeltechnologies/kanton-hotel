@@ -26,7 +26,7 @@ export function ConsoleShell({
             {item("/desk/new", "New booking at the desk", "reservations")}
             {item("/desk/rooms", "Room board", "rooms")}
             {item("/desk/reports", "Takings", "reports")}
-            {item("/kiosk", "Reception tablet", "reservations")}
+            {item("/kiosk?tablet=1", "Reception tablet", "reservations")}
             <h4>MANAGEMENT</h4>
             {item("/admin", "Hotel settings", "*")}
             {item("/admin/staff", "Staff accounts", "*")}

@@ -75,7 +75,7 @@ export default async function AdminSettings() {
             </p>
             <label className="field"><span>Tablet PIN</span>
               <input type="text" name="kiosk_pin" defaultValue={s.kiosk_pin} inputMode="numeric" /></label>
-            <a className="btn ghost sm" href="/kiosk" target="_blank" rel="noopener">Open the tablet screen</a>
+            <a className="btn ghost sm" href="/kiosk?tablet=1" target="_blank" rel="noopener">Open the tablet screen</a>
           </fieldset>
 
           <fieldset><legend>Email to guests</legend>

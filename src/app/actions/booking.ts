@@ -5,8 +5,10 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getMenu, getRooms, getSettings, getReservationByCode, roomIsTaken, pushHistory } from "@/lib/db";
-import { advanceFor, makeCode, nightsBetween, normPhone } from "@/lib/util";
+import { advanceFor, makeCode, nightsBetween, normPhone, todayISO } from "@/lib/util";
 import { bookingEmail, sendMail, siteUrl } from "@/lib/email";
+import { paymentAmounts, paymentMode } from "@/lib/payment";
+import { requireStaff } from "@/lib/auth";
 import type { FoodLine, Reservation } from "@/lib/types";
 
 export type FormState = { error?: string };
@@ -19,6 +21,8 @@ export type FormState = { error?: string };
 export async function createBooking(_prev: FormState, fd: FormData): Promise<FormState> {
   const raw = String(fd.get("source") ?? "online");
   const source = raw === "walk-in" || raw === "kiosk" ? raw : "online";
+  if (source === "walk-in") await requireStaff("reservations");
+  const mode = paymentMode(fd.get("paymentMode"));
   const name = String(fd.get("name") ?? "").trim();
   const phone = String(fd.get("phone") ?? "").trim();
   const email = String(fd.get("email") ?? "").trim();
@@ -30,12 +34,17 @@ export async function createBooking(_prev: FormState, fd: FormData): Promise<For
   const note = String(fd.get("note") ?? "").trim();
   const id_card_type = String(fd.get("idType") ?? "");
   const id_card_number = String(fd.get("idNumber") ?? "").trim();
-  const wanted: Record<string, number> = JSON.parse(String(fd.get("food") ?? "{}"));
+  let wanted: Record<string, number>;
+  try {
+    wanted = JSON.parse(String(fd.get("food") ?? "{}"));
+    if (!wanted || typeof wanted !== "object" || Array.isArray(wanted)) return { error: "Please select your meals again." };
+  } catch { return { error: "Please select your meals again." }; }
 
   if (!name || normPhone(phone).length < 8) return { error: "Put a full name and a working phone number." };
   if (!roomId) return { error: "Choose a room." };
   const nights = nightsBetween(checkIn, checkOut);
-  if (nights < 1) return { error: "The leaving date has to be after the arrival date." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(checkIn) || !/^\d{4}-\d{2}-\d{2}$/.test(checkOut) || !Number.isFinite(nights) || nights < 1) return { error: "The leaving date has to be after the arrival date." };
+  if (source !== "walk-in" && checkIn < todayISO()) return { error: "Choose today or a future arrival date." };
   if (source !== "walk-in" && fd.get("agree") !== "on")
     return { error: "Tick the booking rules before you continue." };
 
@@ -51,13 +60,14 @@ export async function createBooking(_prev: FormState, fd: FormData): Promise<For
     };
 
   const room = (await getRooms()).find((r) => r.id === roomId);
-  if (!room || !room.active) return { error: "That room is no longer on sale." };
+  if (!room || !room.active || ["cleaning", "maintenance"].includes(room.status)) return { error: "That room is no longer on sale." };
+  if (!Number.isInteger(guests) || guests < 1 || guests > room.capacity) return { error: `This room allows up to ${room.capacity} guests.` };
   if (await roomIsTaken(room.id, checkIn, checkOut))
     return { error: "Somebody has already paid for that room on those dates. Pick another room or shift your dates." };
 
   const menu = await getMenu(true);
   const food: FoodLine[] = Object.entries(wanted)
-    .filter(([, q]) => Number(q) > 0)
+    .filter(([, q]) => Number.isInteger(Number(q)) && Number(q) > 0 && Number(q) <= 100)
     .map(([id, qty]) => {
       const m = menu.find((x) => x.id === id);
       return m ? { id, name: m.name, price: m.price, qty: Number(qty) } : null;
@@ -79,7 +89,10 @@ export async function createBooking(_prev: FormState, fd: FormData): Promise<For
     food, food_total, room_total, total,
     advance_percent: settings.advance_percent, advance_due,
     hold_until: new Date(Date.now() + settings.hold_hours * 3600000).toISOString(),
-    history: [{ at: new Date().toISOString(), what: `Booking created (${source})`, by: name }],
+    history: [
+      { at: new Date().toISOString(), what: `Booking created (${source})`, by: name },
+      { at: new Date().toISOString(), what: `Payment choice: ${mode}`, by: name },
+    ],
   }).select("*").single();
   if (error || !created) return { error: "The booking could not be saved: " + (error?.message ?? "") };
 
@@ -93,8 +106,9 @@ export async function createBooking(_prev: FormState, fd: FormData): Promise<For
   revalidatePath("/desk");
   revalidatePath("/desk/reservations");
   if (source === "walk-in") redirect(`/desk/booking/${code}`);
-  if (source === "kiosk") redirect(`/kiosk/${code}`);
-  redirect(`/pay/${code}`);
+  const query = new URLSearchParams({ mode, p: normPhone(phone) });
+  if (source === "kiosk") redirect(`/kiosk/${code}?${query}`);
+  redirect(`/pay/${code}?${query}`);
 }
 
 /** The guest tells reception they have paid, with their transaction ID. */
@@ -102,12 +116,18 @@ export async function reportPayment(fd: FormData) {
   const code = String(fd.get("code") ?? "");
   const ref = String(fd.get("momoRef") ?? "").trim();
   const r = await getReservationByCode(code);
-  if (!r) return;
+  if (!r || ["cancelled", "no_show", "checked_out"].includes(r.status) || r.paid >= r.total) return;
+  const mode = paymentMode(fd.get("paymentMode"));
+  const { balance, advance } = paymentAmounts(r);
+  const amount = mode === "full" ? balance : advance;
+  if (amount <= 0) return;
   await supabaseAdmin().from("reservations")
     .update({ payment_status: "reported", momo_ref: ref, updated_at: new Date().toISOString() })
     .eq("id", r.id);
-  await pushHistory(r.id, `Guest reported a Mobile Money payment${ref ? ` (${ref})` : ""}`, r.guest_name);
+  await pushHistory(r.id, `Payment choice: ${mode}`, r.guest_name);
+  await pushHistory(r.id, `Guest reported ${amount} FCFA (${mode === "full" ? "full balance" : "advance"})${ref ? ` (${ref})` : ""}`, r.guest_name);
   revalidatePath(`/pay/${code}`);
+  revalidatePath(`/kiosk/${code}`);
   revalidatePath("/desk");
 }
 
@@ -133,11 +153,11 @@ export async function unlockKiosk(_prev: FormState, fd: FormData): Promise<FormS
     httpOnly: true, sameSite: "lax", path: "/",
     maxAge: 60 * 60 * 24 * 30, secure: process.env.NODE_ENV === "production",
   });
-  redirect("/kiosk");
+  redirect("/kiosk?tablet=1");
 }
 
 export async function lockKiosk() {
   const store = await cookies();
   store.delete("kanton_kiosk");
-  redirect("/kiosk");
+  redirect("/kiosk?tablet=1");
 }

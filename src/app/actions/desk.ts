@@ -23,13 +23,20 @@ export async function takePayment(fd: FormData) {
   const method = String(fd.get("method") ?? "Cash");
   const reference = String(fd.get("reference") ?? "").trim();
   const r = await getReservationByCode(code);
-  if (!r || amount <= 0) return;
+  if (!r) return;
+  if (!Number.isFinite(amount) || amount <= 0 || amount > Math.max(0, r.total - r.paid)
+    || ["cancelled", "no_show", "checked_out"].includes(r.status))
+    redirect(`/desk/booking/${code}?paymentError=1`);
+  if (r.status === "held" && r.room_id && await roomIsTaken(r.room_id, r.check_in, r.check_out, r.code))
+    redirect(`/desk/booking/${code}?paymentError=1`);
 
   const receipt_no = receiptNumber();
-  await supabaseAdmin().from("payments").insert({
+  const { error } = await supabaseAdmin().from("payments").insert({
     reservation_id: r.id, receipt_no, amount, method, reference,
     taken_by: staff.id, taken_by_name: staff.full_name,
   });
+  // A failed insert must never redirect to an empty or nonexistent payment receipt.
+  if (error) redirect(`/desk/booking/${code}?paymentError=1`);
   await pushHistory(r.id, `Payment of ${amount} FCFA (${method}) recorded`, staff.full_name);
 
   // Tell the guest, if we have an address for them.

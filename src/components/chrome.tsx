@@ -16,6 +16,7 @@ export async function SiteHeader() {
           <Link href="/rooms">Rooms</Link>
           <Link href="/dining">Dining</Link>
           <Link href="/find">My booking</Link>
+          <Link href="/kiosk">Booking kiosk</Link>
           <Link href="/policy">Booking rules</Link>
           <Link href={staff ? "/desk" : "/login"}>{staff ? "Front desk" : "Staff sign in"}</Link>
         </nav>
@@ -47,6 +48,8 @@ export async function SiteFooter() {
           <b>Book</b>
           <p className="small" style={{ marginTop: 6 }}>
             <Link href="/rooms">See the rooms</Link>
+            <br />
+            <Link href="/kiosk">Booking kiosk</Link>
             <br />
             <Link href="/find">Find my booking</Link>
             <br />

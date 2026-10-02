@@ -231,52 +231,82 @@ td.acts .btn{margin:2px 3px 2px 0}
 .avatar{width:54px; height:54px; border-radius:50%; background:var(--teal); color:#fff; display:grid;
   place-items:center; font-family:"Zilla Slab",serif; font-size:1.3rem; flex:0 0 auto}
 
-/* ---------- print ---------- */
-@media print {
-  @page {
-    size: A4 portrait;
-    margin: 12mm;
-  }
+/* ---------- booking and kiosk ---------- */
+.booking-layout,.kiosk-booking{grid-template-columns:minmax(0,1.4fr) minmax(290px,1fr);align-items:start;gap:24px}
+.payment-choice{padding:12px;margin:16px 0}
+.payment-option{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line-strong);border-radius:var(--r);padding:12px;cursor:pointer}
+.payment-option+.payment-option{margin-top:10px}
+.payment-option.selected{border-color:var(--caramel);background:var(--caramel-soft)}
+.payment-option input{margin-top:4px;accent-color:var(--caramel);flex:0 0 auto}
+.payment-option b,.payment-option small{display:block}
+.payment-option small{color:var(--muted);font-size:.8rem;margin-top:4px}
+.form-msg{margin-top:12px}
+.kiosk{min-height:100vh;padding:24px 20px 48px}
+.kiosk-brand{max-width:1180px;margin:0 auto 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.kiosk-brand .logo{width:180px;height:auto}
+.kiosk-center{display:flex;justify-content:center;align-items:flex-start;padding:24px 0}
+.kiosk-wide{max-width:1180px;margin:0 auto}
+.kiosk-head{max-width:1180px;margin:0 auto 20px}
+.kiosk-head h1{font-size:clamp(1.8rem,4vw,2.6rem)}
+.kiosk-head p{margin-top:10px}
+.kiosk-dates{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:22px}
+.kiosk-dates .field{margin-bottom:0;flex:1;min-width:150px}
+.kiosk-room{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);text-align:left;padding:0;overflow:hidden;cursor:pointer}
+.kiosk-room:hover{border-color:var(--caramel)}
+.kiosk-room img{width:100%;aspect-ratio:4/3;object-fit:cover}
+.kiosk-room-body{padding:16px}
+.kiosk-price{font-size:1.4rem;font-weight:700;color:var(--caramel);margin-top:10px}
+.kiosk-price span{font-size:.85rem;font-weight:400}
+.logo{width:180px;height:auto}
+.foot .logo{margin-bottom:12px}
+@media(max-width:760px){
+  .booking-layout,.kiosk-booking{grid-template-columns:minmax(0,1fr)}
+  .booking-layout>aside,.kiosk-booking>aside{position:static!important}
+  .kiosk{padding:16px 14px 32px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,288px),1fr))}
+}
 
-  html,
-  body {
-    background: #ffffff !important;
-    color: #000000 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
+/* ---------- thermal receipts ---------- */
+.receipt-page{--receipt-width:80mm;padding:20px 12px 40px}
+.receipt-page[data-paper="58"]{--receipt-width:58mm}
+.receipt-toolbar{max-width:1000px;margin:0 auto 20px}
+.receipt-toolbar p{margin:12px 0 0}
+.receipt-paper{display:flex;gap:8px;align-items:center;font-size:.85rem}
+.receipt-paper select{width:auto}
+.receipt-sheet{width:var(--receipt-width);max-width:100%;margin:0 auto;padding:3mm;background:#fff;color:#000;
+  font:11px/1.4 Arial,Helvetica,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.12);overflow-wrap:anywhere}
+.receipt-sheet h1,.receipt-sheet h2{font-family:Arial,Helvetica,sans-serif;color:#000;letter-spacing:0}
+.receipt-header{text-align:center;border-bottom:1px dashed #000;padding-bottom:3mm}
+.receipt-header h1{font-size:14px;line-height:1.2;margin:2mm 0}
+.receipt-header h2{font-size:12px;line-height:1.2;margin:3mm 0 1mm}
+.receipt-logo{width:36mm;max-width:80%;height:auto;margin:0 auto;filter:grayscale(1)}
+.receipt-details{padding:3mm 0}
+.receipt-items{min-width:0;width:100%;table-layout:fixed;font-size:inherit;color:#000}
+.receipt-items th,.receipt-items td{padding:2mm 0;border-bottom:1px dashed #777;background:#fff;color:#000;position:static}
+.receipt-items th{font-size:inherit;border-top:1px dashed #000}
+.receipt-items td:first-child{padding-right:2mm}
+.receipt-items tbody tr:hover{background:#fff}
+.receipt-items small{display:block;font-size:10px;margin-top:1mm}
+.receipt-items tr{break-inside:avoid}
+.receipt-totals{margin-top:3mm}
+.receipt-line{display:flex;justify-content:space-between;align-items:baseline;gap:2mm;padding:1mm 0}
+.receipt-line>span:first-child{min-width:0}
+.receipt-line>span:last-child,.receipt-line>b{flex-shrink:0;text-align:right}
+.receipt-line.strong{font-weight:700;border-top:1px dashed #000;padding-top:2mm;margin-top:1mm}
+.receipt-payment-log{margin:3mm 0}
+.receipt-payment-entry{margin:2mm 0;break-inside:avoid}
+.receipt-footer{text-align:center;border-top:1px dashed #000;margin-top:3mm;padding-top:3mm}
+.receipt-footer p{margin:0 0 2mm}
 
-  /* Hide navigation, action bars, buttons, and footers when printing */
-  .no-print,
-  header,
-  footer,
-  nav,
-  button,
-  .site-header,
-  .site-footer {
-    display: none !important;
-  }
-
-  /* Ensure all receipt wrappers and children stay visible */
-  body,
-  main,
-  .print-root,
-  .print-sheet,
-  .receipt-sheet {
-    visibility: visible !important;
-    display: block !important;
-    position: static !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #ffffff !important;
-    box-shadow: none !important;
-    border: none !important;
-  }
+@media print{
+  @page{size:auto;margin:0}
+  html,body{background:#fff!important;color:#000!important;margin:0!important;padding:0!important;height:auto!important;overflow:visible!important}
+  .noprint,.no-print,.topbar,.foot,.side,.toast,.modal{display:none!important}
+  .receipt-page{page:thermal-receipt;padding:0!important;margin:0!important;background:#fff!important;width:var(--receipt-width)}
+  .receipt-sheet{display:block!important;visibility:visible!important;position:static!important;margin:0!important;
+    width:var(--receipt-width)!important;max-width:100%!important;box-shadow:none!important;background:#fff!important;color:#000!important;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .receipt-sheet *{visibility:visible!important;color:#000!important}
+  .receipt-header,.receipt-footer{display:block!important}
 }
